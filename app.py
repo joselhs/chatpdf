@@ -1,8 +1,22 @@
 import os
+import sys
 import tempfile
 import streamlit as st
 from streamlit_chat import message
 from rag import ChatPDF
+
+
+
+# Check arguments for getting model. If not specified, use neural-chat
+if len(sys.argv) > 1:
+    model = sys.argv[1]
+    if model == 'openai':
+        model_used = 'OpenAI -GPT 3.5'
+    else:
+        model_used = "Ollama - Neural Chat"
+else:
+    model_used = "Ollama - Neural Chat"
+
 
 # adds a title for the web page
 st.set_page_config(page_title="PDF Chatbot")
@@ -21,8 +35,9 @@ def display_messages():
 
     Note: Streamlit (st) functions are used for displaying content in a Streamlit app.
     """
+    
     # Display a subheader for the chat.
-    st.subheader("Chat")
+    st.subheader(f"Chat")
 
     # Iterate through messages stored in the session state.
     for i, (msg, is_user) in enumerate(st.session_state["messages"]):
@@ -112,6 +127,8 @@ def page():
     
     # Display the main header of the Streamlit app.
     st.header("ChatPDF")
+
+    st.markdown(f"##### Using {model_used}")
 
     # Display a subheader and a file uploader for uploading PDF files
     st.subheader("Upload a PDF file")
