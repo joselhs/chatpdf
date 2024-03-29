@@ -123,7 +123,7 @@ def page():
         accept_multiple_files=True
     )
 
-    # Create an empty container for a spinner related to file ingestion
+    # Create an empty container for a spinner related to file inge stion
     # and store it in the Streamlit session state under the key "ingestion_spinner"
     st.session_state["ingestion_spinner"] = st.empty()
 
