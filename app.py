@@ -7,6 +7,7 @@ from rag import ChatPDF
 # adds a title for the web page
 st.set_page_config(page_title="PDF Chatbot")
 
+
 def display_messages():
     """
     Displays chat messages in the Streamlit app.
@@ -107,7 +108,7 @@ def page():
     if len(st.session_state) == 0:
         # Initialize the session state with empty chat messages and a ChatPDF assistant
         st.session_state["messages"] = []
-        st.session_state["assistant"] = ChatPDF(model='neural-chat')
+        st.session_state["assistant"] = ChatPDF()
     
     # Display the main header of the Streamlit app.
     st.header("ChatPDF")
@@ -123,7 +124,7 @@ def page():
         accept_multiple_files=True
     )
 
-    # Create an empty container for a spinner related to file inge stion
+    # Create an empty container for a spinner related to file ingestion
     # and store it in the Streamlit session state under the key "ingestion_spinner"
     st.session_state["ingestion_spinner"] = st.empty()
 
