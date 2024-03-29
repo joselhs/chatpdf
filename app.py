@@ -107,7 +107,7 @@ def page():
     if len(st.session_state) == 0:
         # Initialize the session state with empty chat messages and a ChatPDF assistant
         st.session_state["messages"] = []
-        st.session_state["assistant"] = ChatPDF()
+        st.session_state["assistant"] = ChatPDF(model='neural-chat')
     
     # Display the main header of the Streamlit app.
     st.header("ChatPDF")

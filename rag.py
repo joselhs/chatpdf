@@ -1,5 +1,9 @@
+import os
+from dotenv import load_dotenv
+
 from langchain.vectorstores import Chroma
 from langchain.chat_models import ChatOllama
+from langchain_openai import ChatOpenAI
 from langchain.embeddings import FastEmbedEmbeddings
 from langchain.schema.output_parser import StrOutputParser
 from langchain.document_loaders import PyPDFLoader
@@ -9,12 +13,13 @@ from langchain.schema.runnable import RunnablePassthrough
 from langchain.vectorstores.utils import filter_complex_metadata
 
 
+
 class ChatPDF:
     vector_store = None
     retriever = None
     chain = None
 
-    def __init__(self):
+    def __init__(self, model):
         """
         Initializes the question-answering system with default configuration.
 
@@ -23,8 +28,14 @@ class ChatPDF:
         - text_splitter: RecursiveCharacterTextSplitter for splitting text into chunks with overlap
         - prompt_template: PromptTemplate for building prompt with input variables for question and context.
         """
-        # Initialize Ollama model with 'neural-chat'
-        self.model = ChatOllama(model='neural-chat')
+        if model == 'openai':
+            # Initialize ChatOpenAI model
+            # Load env vars
+            load_dotenv()
+            self.model = ChatOpenAI()
+        else:
+            # Initialize Ollama model with 'neural-chat'
+            self.model = ChatOllama(model='neural-chat')
         # Initialize RecursiveCharacterTextSplitter with chunk_size and overlap
         self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         # Initialize PromptTemplate with a predefined template and placeholders for question and context
