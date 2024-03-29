@@ -6,7 +6,6 @@ from streamlit_chat import message
 from rag import ChatPDF
 
 
-
 # Check arguments for getting model. If not specified, use neural-chat
 if len(sys.argv) > 1:
     model = sys.argv[1]
