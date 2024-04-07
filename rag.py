@@ -1,17 +1,18 @@
-import os
+import utils
 import sys
 from dotenv import load_dotenv
 
-from langchain.vectorstores import Chroma
-from langchain.chat_models import ChatOllama
+from langchain_community.vectorstores import Chroma
+from langchain.chains import RetrievalQAWithSourcesChain
 from langchain_openai import ChatOpenAI
-from langchain.embeddings import FastEmbedEmbeddings
+from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain.schema.output_parser import StrOutputParser
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.prompts import PromptTemplate
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.vectorstores.utils import filter_complex_metadata
+
 
 
 class ChatPDF:
@@ -87,24 +88,20 @@ class ChatPDF:
         self.retriever = vector_store.as_retriever(
             search_type="similarity_score_threshold",
             search_kwargs={
-                "k": 3,
+                "k": 5,
                 "score_threshold": 0.5
             }
         )
 
-        # Define a processing chain for handling question-answers
-        # Chain is defined as:
-        # 1. get "context" from the retriever
-        # 2. a passthrough for the "question"
-        # 3. Fill in the prompt
-        # 4. Invoke the LLM model
-        # 5. Parse output
-        self.chain = (
-            {"context": self.retriever, "question": RunnablePassthrough()}
-            | self.prompt
-            | self.model
-            | StrOutputParser()
+        retrieval_chain = RetrievalQAWithSourcesChain.from_chain_type(
+            llm=self.model,
+            retriever=self.retriever,
+            return_source_documents=True,
+            verbose=True
         )
+        
+        self.chain = retrieval_chain
+
 
 
     def ask(self, query: str) -> str:
@@ -120,8 +117,17 @@ class ChatPDF:
         """
         if not self.chain:
             return "Please, add a PDF file first."
+        else:
+            response = self.chain.invoke(query)
+            # TFor testing purpose
+            for document in response['source_documents']:
+                print("#########################")
+                print(document.metadata)
+                print(document.page_content)
+
+            formated_response = utils.format_response(response)
         
-        return self.chain.invoke(query)
+        return formated_response
     
     
     def clear(self) -> None:

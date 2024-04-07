@@ -41,7 +41,16 @@ def display_messages():
     # Iterate through messages stored in the session state.
     for i, (msg, is_user) in enumerate(st.session_state["messages"]):
         # Display each message using the message function with appropiate styling.
-        message(msg, is_user=is_user, key=str(i))
+        if is_user:
+            message(msg, is_user=is_user, key=str(i))
+        else:
+            if msg['sources']:
+                msg_text = f"{msg['answer']} \n  <span style='font-size: 12px;'>Sources: {','.join(msg['sources'])}</source>"
+            else:
+                msg_text = msg['answer']
+
+            message(msg_text, is_user=is_user, key=str(i), allow_html=True)
+                
 
     # Create an empty container for a thinking spinner and store it in the session state
     st.session_state["thinking_spinner"] = st.empty()
@@ -74,6 +83,9 @@ def process_input():
         st.session_state["messages"].append((user_text, True))
         st.session_state["messages"].append((agent_text, False))
 
+        # Clean user input
+        st.session_state.user_input = ""
+
 
 def read_and_save_file():
     """
@@ -98,7 +110,7 @@ def read_and_save_file():
     # Iterate through the uploaded files in the session state.
     for file in st.session_state["file_uploader"]:
         # Save the file to a temporary location and get the file path.
-        with tempfile.NamedTemporaryFile(delete=False) as tf:
+        with tempfile.NamedTemporaryFile(delete=False, prefix=file.name) as tf:
             tf.write(file.getbuffer())
             file_path = tf.name
 
