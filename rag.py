@@ -2,15 +2,14 @@ import utils
 import sys
 from dotenv import load_dotenv
 
-from langchain_community.vectorstores import Chroma
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain_openai import ChatOpenAI
+from langchain_community.vectorstores import Chroma
+from langchain_community.chat_models import ChatOllama
 from langchain_community.embeddings import FastEmbedEmbeddings
-from langchain.schema.output_parser import StrOutputParser
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.utils import filter_complex_metadata
-
 
 
 class ChatPDF:
@@ -23,7 +22,7 @@ class ChatPDF:
         Initializes the question-answering system with default configuration.
 
         The constructor sets up the following components:
-        - model: ChatOllama LLM model ('neural_chat')
+        - model: ChatOllama LLM model ('neural_chat') or ChatOpenAI model
         - text_splitter: RecursiveCharacterTextSplitter for splitting text into chunks with overlap
         """
         # Check arguments for getting model. If not specified, use neural-chat
@@ -86,6 +85,7 @@ class ChatPDF:
             verbose=True
         )
         
+        # set up the chain
         self.chain = retrieval_chain
 
 
@@ -105,7 +105,7 @@ class ChatPDF:
             return "Please, add a PDF file first."
         else:
             response = self.chain.invoke(query)
-            # TFor testing purpose
+            # For testing purpose
             for document in response['source_documents']:
                 print("#########################")
                 print(document.metadata)
