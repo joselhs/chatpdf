@@ -9,8 +9,6 @@ from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain.schema.output_parser import StrOutputParser
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.prompts import PromptTemplate
-from langchain.schema.runnable import RunnablePassthrough
 from langchain.vectorstores.utils import filter_complex_metadata
 
 
@@ -27,7 +25,6 @@ class ChatPDF:
         The constructor sets up the following components:
         - model: ChatOllama LLM model ('neural_chat')
         - text_splitter: RecursiveCharacterTextSplitter for splitting text into chunks with overlap
-        - prompt_template: PromptTemplate for building prompt with input variables for question and context.
         """
         # Check arguments for getting model. If not specified, use neural-chat
         if len(sys.argv) > 1:
@@ -45,21 +42,9 @@ class ChatPDF:
             self.model = ChatOllama(model=model)
         # Initialize RecursiveCharacterTextSplitter with chunk_size and overlap
         self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-        # Initialize PromptTemplate with a predefined template and placeholders for question and context
-        self.prompt = PromptTemplate.from_template(
-            """
-            You are a helpful assistant that analyses PDF files content to give answers to provided questions.
-            Use the following pieces of context retrieved from the files to answer the question.
-            If you can't find the answer to the question, or you just don't know the answer, just say that you don't know. 
-            Don't hallucinate.
-
-            Question: {question}
-            Context: {context}
-            Answer:
-            """
-        )
 
     
+
     def ingest(self, pdf_file_path: str) -> None:
         """
         Ingests data from a PDF file, process the data and set up the different components.
@@ -93,6 +78,7 @@ class ChatPDF:
             }
         )
 
+        # Create RetrievalQA with Sources Chain by using previous instantiated model and retriever
         retrieval_chain = RetrievalQAWithSourcesChain.from_chain_type(
             llm=self.model,
             retriever=self.retriever,
