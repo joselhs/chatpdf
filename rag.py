@@ -1,16 +1,14 @@
-import os
+import utils
 import sys
 from dotenv import load_dotenv
 
-from langchain.vectorstores import Chroma
-from langchain.chat_models import ChatOllama
+from langchain.chains import RetrievalQAWithSourcesChain
 from langchain_openai import ChatOpenAI
-from langchain.embeddings import FastEmbedEmbeddings
-from langchain.schema.output_parser import StrOutputParser
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.vectorstores import Chroma
+from langchain_community.chat_models import ChatOllama
+from langchain_community.embeddings import FastEmbedEmbeddings
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.prompts import PromptTemplate
-from langchain.schema.runnable import RunnablePassthrough
 from langchain.vectorstores.utils import filter_complex_metadata
 
 
@@ -24,9 +22,8 @@ class ChatPDF:
         Initializes the question-answering system with default configuration.
 
         The constructor sets up the following components:
-        - model: ChatOllama LLM model ('neural_chat')
+        - model: ChatOllama LLM model ('neural_chat') or ChatOpenAI model
         - text_splitter: RecursiveCharacterTextSplitter for splitting text into chunks with overlap
-        - prompt_template: PromptTemplate for building prompt with input variables for question and context.
         """
         # Check arguments for getting model. If not specified, use neural-chat
         if len(sys.argv) > 1:
@@ -44,21 +41,9 @@ class ChatPDF:
             self.model = ChatOllama(model=model)
         # Initialize RecursiveCharacterTextSplitter with chunk_size and overlap
         self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-        # Initialize PromptTemplate with a predefined template and placeholders for question and context
-        self.prompt = PromptTemplate.from_template(
-            """
-            You are a helpful assistant that analyses PDF files content to give answers to provided questions.
-            Use the following pieces of context retrieved from the files to answer the question.
-            If you can't find the answer to the question, or you just don't know the answer, just say that you don't know. 
-            Don't hallucinate.
-
-            Question: {question}
-            Context: {context}
-            Answer:
-            """
-        )
 
     
+
     def ingest(self, pdf_file_path: str) -> None:
         """
         Ingests data from a PDF file, process the data and set up the different components.
@@ -87,24 +72,22 @@ class ChatPDF:
         self.retriever = vector_store.as_retriever(
             search_type="similarity_score_threshold",
             search_kwargs={
-                "k": 3,
+                "k": 5,
                 "score_threshold": 0.5
             }
         )
 
-        # Define a processing chain for handling question-answers
-        # Chain is defined as:
-        # 1. get "context" from the retriever
-        # 2. a passthrough for the "question"
-        # 3. Fill in the prompt
-        # 4. Invoke the LLM model
-        # 5. Parse output
-        self.chain = (
-            {"context": self.retriever, "question": RunnablePassthrough()}
-            | self.prompt
-            | self.model
-            | StrOutputParser()
+        # Create RetrievalQA with Sources Chain by using previous instantiated model and retriever
+        retrieval_chain = RetrievalQAWithSourcesChain.from_chain_type(
+            llm=self.model,
+            retriever=self.retriever,
+            return_source_documents=True,
+            verbose=True
         )
+        
+        # set up the chain
+        self.chain = retrieval_chain
+
 
 
     def ask(self, query: str) -> str:
@@ -120,8 +103,17 @@ class ChatPDF:
         """
         if not self.chain:
             return "Please, add a PDF file first."
+        else:
+            response = self.chain.invoke(query)
+            # For testing purpose
+            for document in response['source_documents']:
+                print("#########################")
+                print(document.metadata)
+                print(document.page_content)
+
+            formated_response = utils.format_response(response)
         
-        return self.chain.invoke(query)
+        return formated_response
     
     
     def clear(self) -> None:
